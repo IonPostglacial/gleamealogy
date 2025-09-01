@@ -76,7 +76,7 @@ pub type SourceKind {
 
 pub type Source {
   Source(
-    ref: String,
+    id: Int,
     title: String,
     main_author: Name,
     co_authors: List(Name),
@@ -105,7 +105,7 @@ pub type TimePeriod {
 
 pub type Occupation {
   Occupation(
-    ref: String,
+    id: Int,
     kind: OccupationKind,
     period: Option(TimePeriod),
     organization: Option(String),
@@ -138,7 +138,7 @@ pub type EventKind {
 
 pub type Event {
   Event(
-    ref: String,
+    id: Int,
     kind: EventKind,
     date: Date,
     location: Location,
@@ -149,7 +149,7 @@ pub type Event {
 
 pub type Person {
   Person(
-    ref: String,
+    id: Int,
     name: Name,
     gender: Gender,
     birth: Option(Date),
@@ -208,7 +208,7 @@ pub type RelationshipKind {
 
 pub type Relationship {
   Relationship(
-    ref: String,
+    id: Int,
     person1: Person,
     person2: Person,
     kind: RelationshipKind,
@@ -220,21 +220,21 @@ pub type Relationship {
 
 pub opaque type Dataset {
   Dataset(
-    ref: String,
-    people_by_ref: dict.Dict(String, Person),
-    relationships_by_ref: dict.Dict(String, Relationship),
-    relationships_by_persons: bimultimap.BiMultiMap(String, Relationship),
+    id: Int,
+    people_by_id: dict.Dict(Int, Person),
+    relationships_by_id: dict.Dict(Int, Relationship),
+    relationships_by_persons: bimultimap.BiMultiMap(Int, Relationship),
     created_at: Date,
     updated_at: Date,
     notes: String,
   )
 }
 
-pub fn new(ref: String, created_at: Date) -> Dataset {
+pub fn new(id: Int, created_at: Date) -> Dataset {
   Dataset(
-    ref,
-    people_by_ref: dict.new(),
-    relationships_by_ref: dict.new(),
+    id,
+    people_by_id: dict.new(),
+    relationships_by_id: dict.new(),
     relationships_by_persons: bimultimap.new(),
     created_at: created_at,
     updated_at: created_at,
@@ -242,8 +242,8 @@ pub fn new(ref: String, created_at: Date) -> Dataset {
   )
 }
 
-pub fn ref(dataset: Dataset) -> String {
-  dataset.ref
+pub fn id(dataset: Dataset) -> Int {
+  dataset.id
 }
 
 pub fn created_at(dataset: Dataset) -> Date {
@@ -254,55 +254,49 @@ pub fn updated_at(dataset: Dataset) -> Date {
   dataset.updated_at
 }
 
-pub fn people_refs(dataset: Dataset) -> List(String) {
-  dataset.people_by_ref |> dict.keys()
+pub fn people_ids(dataset: Dataset) -> List(Int) {
+  dataset.people_by_id |> dict.keys()
 }
 
-pub fn person_by_ref(dataset: Dataset, ref: String) -> Result(Person, Nil) {
-  dataset.people_by_ref |> dict.get(ref)
+pub fn person_by_id(dataset: Dataset, id: Int) -> Result(Person, Nil) {
+  dataset.people_by_id |> dict.get(id)
 }
 
 pub fn insert_person(dataset: Dataset, person: Person) -> Dataset {
   Dataset(
     ..dataset,
-    people_by_ref: dataset.people_by_ref
-      |> dict.insert(person.ref, person),
+    people_by_id: dataset.people_by_id
+      |> dict.insert(person.id, person),
   )
 }
 
 pub fn delete_person(dataset: Dataset, person: Person) -> Dataset {
   Dataset(
     ..dataset,
-    people_by_ref: dataset.people_by_ref
-      |> dict.delete(person.ref),
+    people_by_id: dataset.people_by_id
+      |> dict.delete(person.id),
   )
 }
 
-pub fn relationship_refs(dataset: Dataset) -> List(String) {
-  dataset.relationships_by_ref |> dict.keys()
+pub fn relationship_ids(dataset: Dataset) -> List(Int) {
+  dataset.relationships_by_id |> dict.keys()
 }
 
-pub fn relationship_by_ref(
+pub fn relationship_by_id(
   dataset: Dataset,
-  ref: String,
+  id: Int,
 ) -> Result(Relationship, Nil) {
-  dataset.relationships_by_ref |> dict.get(ref)
+  dataset.relationships_by_id |> dict.get(id)
 }
 
-pub fn relationships_of_person1(
-  dataset: Dataset,
-  ref: String,
-) -> List(Relationship) {
+pub fn relationships_of_person1(dataset: Dataset, id: Int) -> List(Relationship) {
   dataset.relationships_by_persons
-  |> bimultimap.get_forward(ref)
+  |> bimultimap.get_forward(id)
 }
 
-pub fn relationships_of_person2(
-  dataset: Dataset,
-  ref: String,
-) -> List(Relationship) {
+pub fn relationships_of_person2(dataset: Dataset, id: Int) -> List(Relationship) {
   dataset.relationships_by_persons
-  |> bimultimap.get_backward(ref)
+  |> bimultimap.get_backward(id)
 }
 
 pub fn insert_relationship(
@@ -311,12 +305,12 @@ pub fn insert_relationship(
 ) -> Dataset {
   Dataset(
     ..dataset,
-    relationships_by_ref: dataset.relationships_by_ref
-      |> dict.insert(relationship.ref, relationship),
+    relationships_by_id: dataset.relationships_by_id
+      |> dict.insert(relationship.id, relationship),
     relationships_by_persons: dataset.relationships_by_persons
       |> bimultimap.insert(
-        relationship.person1.ref,
-        relationship.person2.ref,
+        relationship.person1.id,
+        relationship.person2.id,
         relationship,
       ),
   )
@@ -328,12 +322,12 @@ pub fn delete_relationship(
 ) -> Dataset {
   Dataset(
     ..dataset,
-    relationships_by_ref: dataset.relationships_by_ref
-      |> dict.delete(relationship.ref),
+    relationships_by_id: dataset.relationships_by_id
+      |> dict.delete(relationship.id),
     relationships_by_persons: dataset.relationships_by_persons
       |> bimultimap.delete(
-        relationship.person1.ref,
-        relationship.person2.ref,
+        relationship.person1.id,
+        relationship.person2.id,
         relationship,
       ),
   )

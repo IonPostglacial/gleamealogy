@@ -1,5 +1,12 @@
+import cli
 import gleam/io
 
 pub fn main() -> Nil {
-  io.println("Hello from gleamealogy!")
+  case cli.prompt_command() {
+    Error(s) -> io.println(s)
+    Ok(cmd) -> {
+      echo cmd
+      Nil
+    }
+  }
 }
