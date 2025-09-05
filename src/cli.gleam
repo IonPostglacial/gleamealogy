@@ -1,6 +1,8 @@
 import command.{type ProtoCommand, ProtoCommand}
+import gleam/dict
 import gleam/io
 import gleam/list
+import gleam/option.{type Option, None, Some}
 import gleam/string
 import input.{input}
 
@@ -145,4 +147,73 @@ fn text_to_verb(verb: String) -> Result(command.Verb, InvalidVerb) {
     "q" -> Ok(command.VerbQuit)
     _ -> Error(InvalidVerb(verb))
   }
+}
+
+type FieldKind {
+  TextField(max_size: Int)
+  DateField
+  IntegerField(min: Int, max: Int)
+}
+
+type FormField {
+  FormField(label: String, optional: Bool, kind: FieldKind)
+}
+
+type FormValue {
+  TextValue
+  DateValue
+  IntegerValue
+}
+
+fn parse_form_value(field: FormField, raw_value: String) -> Option(FormValue) {
+  case field.kind {
+    DateField -> todo
+    IntegerField(min:, max:) -> todo
+    TextField(max_size:) -> todo
+  }
+}
+
+fn prompt_field(field: FormField, t: fn(String) -> String) -> Option(FormValue) {
+  let field_label = t(field.label)
+  let raw_value = input(field_label <> ":")
+  case raw_value {
+    Error(_) -> None
+    Ok(v) -> parse_form_value(field, v)
+  }
+}
+
+type FieldSet {
+  FieldSet(label: Option(String), fields: List(FormField))
+}
+
+fn prompt_fieldset(
+  fs: FieldSet,
+  t: fn(String) -> String,
+) -> List(#(String, FormValue)) {
+  case fs.label {
+    None -> Nil
+    Some(label) -> io.print(t(label) <> "\n")
+  }
+  fs.fields
+  |> list.flat_map(fn(field) {
+    let value = prompt_field(field, t)
+    case value {
+      None -> []
+      Some(v) -> [#(field.label, v)]
+    }
+  })
+}
+
+type Form {
+  Form(label: String, fieldsets: List(FieldSet))
+}
+
+fn prompt_form(
+  form: Form,
+  t: fn(String) -> String,
+) -> dict.Dict(String, FormValue) {
+  io.print(t(form.label) <> "\n")
+  list.map(form.fieldsets, prompt_fieldset(_, t))
+  |> list.flatten()
+  |> dict.from_list()
 }
