@@ -5,6 +5,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
 import input.{input}
+import model
 
 pub fn prompt_command() -> Result(ProtoCommand, String) {
   let in = input("Enter your command:\n\n" <> help_text())
@@ -183,7 +184,7 @@ fn prompt_field(field: FormField, t: fn(String) -> String) -> Option(FormValue) 
 }
 
 type FieldSet {
-  FieldSet(label: Option(String), fields: List(FormField))
+  FieldSet(label: String, fields: List(FormField))
 }
 
 fn prompt_fieldset(
@@ -191,8 +192,8 @@ fn prompt_fieldset(
   t: fn(String) -> String,
 ) -> List(#(String, FormValue)) {
   case fs.label {
-    None -> Nil
-    Some(label) -> io.print(t(label) <> "\n")
+    "" -> Nil
+    label -> io.print(t(label) <> "\n")
   }
   fs.fields
   |> list.flat_map(fn(field) {
@@ -216,4 +217,32 @@ fn prompt_form(
   list.map(form.fieldsets, prompt_fieldset(_, t))
   |> list.flatten()
   |> dict.from_list()
+}
+
+fn person_form() -> Form {
+  Form(label: "person", fieldsets: [
+    FieldSet(label: "person.name", fields: [
+      FormField(
+        label: "person.name.last",
+        optional: False,
+        kind: TextField(255),
+      ),
+      FormField(
+        label: "person.name.given",
+        optional: False,
+        kind: TextField(255),
+      ),
+    ]),
+    FieldSet(label: "person.dates", fields: [
+      FormField(label: "person.dates.birth", optional: True, kind: DateField),
+      FormField(label: "person.dates.death", optional: True, kind: DateField),
+    ]),
+    FieldSet("", [
+      FormField(label: "person.notes", optional: True, kind: TextField(1024)),
+    ]),
+  ])
+}
+
+fn person_from_form_values(values: dict.Dict(String, FormValue)) -> model.Person {
+  todo
 }
